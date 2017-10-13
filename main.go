@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 func main() {
 	token := os.Getenv("PAPERTRAIL_API_KEY")
 	if token == "" {
-		fmt.Println("PAPERTRAIL_API_KEY is required")
+		fmt.Printf("PAPERTRAIL_API_KEY is required")
 		return
 	}
 
@@ -22,22 +23,32 @@ func main() {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("http error: %v", err)
+		fmt.Printf("http error: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("http error: %s", resp.Status)
+		fmt.Printf("http error: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 
+	if err != nil {
+		fmt.Printf("body error: %v", err)
+	}
+
 	out, err := os.Create("new_file.tsv")
 	if err != nil {
-		fmt.Println("creating file error: %v", err)
+		fmt.Printf("creating file error: %v", err)
 	}
 
-	n, err := io.Copy(out, resp.Body)
+	unzippedArchive, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		fmt.Println("body error: %v", err)
+		fmt.Printf("ungzipping error: %v", err)
+	}
+	defer unzippedArchive.Close()
+
+	n, err := io.Copy(out, unzippedArchive)
+	if err != nil {
+		fmt.Printf("copying to file error: %v", err)
 	}
 
-	fmt.Println("bytes downloaded: %v", n)
+	fmt.Printf("bytes downloaded: %v", n)
 }
