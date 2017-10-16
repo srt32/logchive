@@ -30,10 +30,6 @@ func main() {
 	}
 	defer resp.Body.Close()
 
-	if err != nil {
-		fmt.Printf("body error: %v", err)
-	}
-
 	out, err := os.Create("new_file.tsv")
 	if err != nil {
 		fmt.Printf("creating file error: %v", err)
